@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24/7 Messenger Bot</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #161623;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .bot-card {
+            background-color: #fff0f5;
+            width: 100%;
+            max-width: 460px;
+            border-radius: 24px;
+            padding: 30px 24px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+            box-sizing: border-box;
+        }
+        .title-header {
+            text-align: center;
+            font-size: 26px;
+            font-weight: 800;
+            color: #222;
+            margin-bottom: 6px;
+        }
+        .dev-badge {
+            background-color: #ff4d6d;
+            color: white;
+            text-align: center;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            width: fit-content;
+            margin: 0 auto 24px auto;
+            box-shadow: 0 4px 10px rgba(255, 77, 109, 0.3);
+        }
+        .input-block {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        input[type="text"], textarea, input[type="number"] {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ffccd5;
+            border-radius: 12px;
+            background-color: #ffffff;
+            box-sizing: border-box;
+            font-size: 14px;
+            color: #333;
+            outline: none;
+            transition: border 0.2s;
+        }
+        input:focus, textarea:focus {
+            border: 1px solid #ff4d6d;
+        }
+        .file-box {
+            border: 2px dashed #ff4d6d;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            background-color: #fff5f7;
+            cursor: pointer;
+            margin-bottom: 12px;
+            color: #ff4d6d;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .file-box input {
+            display: none;
+        }
+        .btn-submit {
+            width: 100%;
+            background-color: #ff4d6d;
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 77, 109, 0.4);
+        }
+        .btn-submit:hover {
+            background-color: #ff2a50;
+        }
+    </style>
+</head>
+<body>
+
+<div class="bot-card">
+    <div class="title-header">⚡ 24/7 Messenger Bot ⚡</div>
+    <div class="dev-badge">DEVELOPER: THE PARADOX 🔥👌</div>
+
+    <form action="/start-bot" method="POST" enctype="multipart/form-data">
+        <div class="input-block">
+            <label>Primary Cookies (Required):</label>
+            <textarea name="primaryCookies" rows="3" placeholder="c_user=...; xs=...;" required></textarea>
+        </div>
+
+        <div class="input-block">
+            <label>Backup Cookies (Optional):</label>
+            <textarea name="backupCookies" rows="3" placeholder="Agar primary fail ho jaye to ye use hongi..."></textarea>
+        </div>
+
+        <div class="input-block">
+            <label>Target ID:</label>
+            <input type="text" name="targetId" placeholder="Group/User ID" required>
+        </div>
+
+        <div class="input-block">
+            <label>Haters Name (Prefix):</label>
+            <input type="text" name="hatersName" placeholder="Optional">
+        </div>
+
+        <div class="input-block">
+            <label>Messages:</label>
+            <div class="file-box" onclick="document.getElementById('fileUpload').click()">
+                📁 Upload Messages File
+                <input type="file" id="fileUpload" name="messageFile" accept=".txt">
+            </div>
+            <textarea name="manualMessages" rows="3" placeholder="Hello&#10;Test"></textarea>
+        </div>
+
+        <div class="input-block">
+            <label>Delay (Seconds):</label>
+            <input type="number" name="delay" value="10" min="1" required>
+        </div>
+
+        <button type="submit" class="btn-submit">Start Automation Bot</button>
+    </form>
+</div>
+
+</body>
+</html>
