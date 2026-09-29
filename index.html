@@ -5,144 +5,129 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>24/7 Messenger Bot</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background-color: #161623;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            margin: 0;
-        }
-        .bot-card {
-            background-color: #fff0f5;
-            width: 100%;
-            max-width: 460px;
-            border-radius: 24px;
-            padding: 30px 24px;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-            box-sizing: border-box;
-        }
-        .title-header {
-            text-align: center;
-            font-size: 26px;
-            font-weight: 800;
-            color: #222;
-            margin-bottom: 6px;
-        }
-        .dev-badge {
-            background-color: #ff4d6d;
-            color: white;
-            text-align: center;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: bold;
-            width: fit-content;
-            margin: 0 auto 24px auto;
-            box-shadow: 0 4px 10px rgba(255, 77, 109, 0.3);
-        }
-        .input-block {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            color: #1a1a1a;
-            margin-bottom: 8px;
-            font-size: 15px;
-            font-weight: 700;
-        }
-        input[type="text"], textarea, input[type="number"] {
-            width: 100%;
-            padding: 14px;
-            border: 1px solid #ffccd5;
-            border-radius: 12px;
-            background-color: #ffffff;
-            box-sizing: border-box;
-            font-size: 14px;
-            color: #333;
-            outline: none;
-            transition: border 0.2s;
-        }
-        input:focus, textarea:focus {
-            border: 1px solid #ff4d6d;
-        }
-        .file-box {
-            border: 2px dashed #ff4d6d;
-            padding: 16px;
-            border-radius: 12px;
-            text-align: center;
-            background-color: #fff5f7;
-            cursor: pointer;
-            margin-bottom: 12px;
-            color: #ff4d6d;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .file-box input {
-            display: none;
-        }
-        .btn-submit {
-            width: 100%;
-            background-color: #ff4d6d;
-            color: white;
-            border: none;
-            padding: 16px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 800;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(255, 77, 109, 0.4);
-        }
-        .btn-submit:hover {
-            background-color: #ff2a50;
-        }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #fff0f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-weight: 6px; font-size: 14px; color: #555; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        textarea { resize: vertical; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; color: white; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 8px; transition: 0.2s; }
+        .btn:hover { opacity: 0.9; }
+        .btn-pink { background-color: #ff4081; }
+        .btn-blue { background-color: #2979ff; }
+        .btn-red { background-color: #ff1744; }
+        .row { display: flex; gap: 10px; }
+        .row .btn { width: 50%; }
+        .status-box { background: #1e1e1e; color: #00ff00; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; margin-top: 15px; max-height: 120px; overflow-y: auto; white-space: pre-wrap; }
     </style>
 </head>
 <body>
 
-<div class="bot-card">
-    <div class="title-header">⚡ 24/7 Messenger Bot ⚡</div>
-    <div class="dev-badge">DEVELOPER: PETER 🔥👌</div>
+<div class="container">
+    <h2>⚡ 24/7 Messenger Bot ⚡</h2>
+    
+    <div class="form-group">
+        <label>Delay (Seconds):</label>
+        <input type="number" id="delay" value="10" min="5">
+    </div>
+    
+    <div class="form-group">
+        <label>Target UID / Thread ID:</label>
+        <input type="text" id="targetId" placeholder="Enter Facebook User ID or Group ID">
+    </div>
 
-    <form action="/start-bot" method="POST" enctype="multipart/form-data">
-        <div class="input-block">
-            <label>Primary Cookies (Required):</label>
-            <textarea name="primaryCookies" rows="3" placeholder="c_user=...; xs=...;" required></textarea>
-        </div>
+    <div class="form-group">
+        <label>Messages (One per line):</label>
+        <textarea id="messages" rows="3" placeholder="Hello&#10;How are you?&#10;Bot active..."></textarea>
+    </div>
 
-        <div class="input-block">
-            <label>Backup Cookies (Optional):</label>
-            <textarea name="backupCookies" rows="3" placeholder="Agar primary fail ho jaye to ye use hongi..."></textarea>
-        </div>
+    <button class="btn btn-pink" onclick="startBot()">🚀 Start Public Bot</button>
 
-        <div class="input-block">
-            <label>Target ID:</label>
-            <input type="text" name="targetId" placeholder="Group/User ID" required>
-        </div>
+    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
 
-        <div class="input-block">
-            <label>Haters Name (Prefix):</label>
-            <input type="text" name="hatersName" placeholder="Optional">
-        </div>
+    <h3>🔍 Task Control</h3>
+    <div class="form-group">
+        <label>Task ID:</label>
+        <input type="text" id="taskId" placeholder="Enter Task ID to manage">
+    </div>
+    
+    <div class="row">
+        <button class="btn btn-blue" onclick="getTaskDetails()">Get Details</button>
+        <button class="btn btn-red" onclick="stopTask()">❌ Stop Task</button>
+    </div>
 
-        <div class="input-block">
-            <label>Messages:</label>
-            <div class="file-box" onclick="document.getElementById('fileUpload').click()">
-                📁 Upload Messages File
-                <input type="file" id="fileUpload" name="messageFile" accept=".txt">
-            </div>
-            <textarea name="manualMessages" rows="3" placeholder="Hello&#10;Test"></textarea>
-        </div>
+    <div class="form-group" style="margin-top: 20px;">
+        <label>Primary Cookies (c_user, xs, etc.):</label>
+        <textarea id="primaryCookies" rows="3" placeholder="paste fb cookies here..."></textarea>
+    </div>
 
-        <div class="input-block">
-            <label>Delay (Seconds):</label>
-            <input type="number" name="delay" value="10" min="1" required>
-        </div>
+    <button class="btn btn-blue" onclick="updateCookies()">💾 Update Cookies</button>
 
-        <button type="submit" class="btn-submit">Start Automation Bot</button>
-    </form>
+    <div class="status-box" id="logBox">System Status: Waiting for user action...</div>
 </div>
+
+<script>
+    const logBox = document.getElementById('logBox');
+    
+    function log(message) {
+        logBox.innerText += "\n> " + message;
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    async function startBot() {
+        const delay = document.getElementById('delay').value;
+        const targetId = document.getElementById('targetId').value;
+        const messages = document.getElementById('messages').value.split('\n').filter(m => m.trim() !== "");
+        const cookies = document.getElementById('primaryCookies').value;
+
+        if(!cookies || !targetId || messages.length === 0) {
+            alert("कृपया Cookies, Target ID और Messages जरूर भरें!");
+            return;
+        }
+
+        log("Sending request to start bot...");
+        
+        const response = await fetch('/api/start-bot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ delay, targetId, messages, cookies })
+        });
+        const data = await response.json();
+        
+        if(data.status === "success") {
+            log(`Bot Started! Task ID: ${data.taskId}`);
+            document.getElementById('taskId').value = data.taskId;
+        } else {
+            log(`Error: ${data.message}`);
+        }
+    }
+
+    async function stopTask() {
+        const taskId = document.getElementById('taskId').value;
+        if(!taskId) return alert("Task ID दर्ज करें!");
+
+        const response = await fetch('/api/stop-bot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ taskId })
+        });
+        const data = await response.json();
+        log(data.message);
+    }
+
+    async function updateCookies() {
+        const cookies = document.getElementById('primaryCookies').value;
+        if(!cookies) return alert("Cookies डालें!");
+        log("Cookies updated in local UI state.");
+    }
+
+    async function getTaskDetails() {
+        const taskId = document.getElementById('taskId').value;
+        if(!taskId) return alert("Task ID दर्ज करें!");
+        log(`Checking status for Task: ${taskId}...`);
+    }
+</script>
 
 </body>
 </html>
