@@ -1,95 +1,89 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const axios = require('axios');
+const path = require('path');
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });
+const PORT = 3000;
 
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
+// एक्टिव टास्क्स को स्टोर करने के लिए ऑब्जेक्ट
+let activeTasks = {};
+
+// फ्रंटएंड UI लोड करने के लिए
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// बोट स्टार्ट करने का वर्किंग API
+app.post('/api/start-bot', (req, res) => {
+    const { delay, targetId, messages, cookies } = req.body;
+    
+    // एक यूनिक टास्क आईडी जेनरेट करें
+    const taskId = "TASK-" + Math.floor(1000 + Math.random() * 9000);
+    
+    let messageIndex = 0;
+    
+    console.log(`[${taskId}] Starting bot for Target: ${targetId} with delay ${delay}s`);
 
-// Facebook Message Sender
-async function sendFbMessage(cookie, targetId, message) {
-    try {
-        const url = `https://facebook.com{targetId}/messages`;
-        await axios.post(url, {
-            messaging_type: "RESPONSE",
-            recipient: { id: targetId },
-            message: { text: message }
-        }, {
-            headers: {
-                'Cookie': cookie,
-                'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        });
-        console.log(`✅ Sent: "${message}"`);
-        return true;
-    } catch (error) {
-        console.error(`❌ Send Failed:`, error.response ? error.response.data : error.message);
-        return false;
-    }
-}
+    // बैकग्राउंड लूप (Interval) सेट करें
+    const intervalId = setInterval(async () => {
+        if (!messages || messages.length === 0) return;
+        
+        const currentMessage = messages[messageIndex];
+        messageIndex = (messageIndex + 1) % messages.length; // मेसेज रोटेशन
 
-app.post('/start-bot', upload.single('messageFile'), async (req, res) => {
-    const { primaryCookies, backupCookies, targetId, hatersName, manualMessages, delay } = req.body;
-    let messages = [];
+        try {
+            console.log(`[${taskId}] Attempting to send message: "${currentMessage}"`);
+            
+            // फेसबुक मेसेंजर पर मेसेज सबमिट करने के लिए HTTP Axios Request
+            // नोट: यह एक सिम्युलेटेड mbasic सबमिशन पाथ है। सुरक्षा के लिए सही कुकी हेडर पास किया गया है।
+            await axios.post(
+                `https://facebook.com`,
+                new URLSearchParams({
+                    'tids': `cid.c.${targetId}`,
+                    'body': currentMessage,
+                    'www_fb_clear_browser_cookie': 'false'
+                }),
+                {
+                    headers: {
+                        'Cookie': cookies,
+                        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }
+            );
 
-    if (req.file) {
-        const fileContent = fs.readFileSync(req.file.path, 'utf-8');
-        messages = fileContent.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-        fs.unlinkSync(req.file.path);
-    } else if (manualMessages) {
-        messages = manualMessages.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-    }
-
-    if (messages.length === 0) {
-        return res.send("⚠️ No messages found!");
-    }
-
-    res.send("🚀 Bot Render backend par start ho gaya hai! Logs check karein.");
-
-    const delayMs = parseInt(delay) * 1000;
-    let currentCookie = primaryCookies;
-
-    for (let i = 0; i < messages.length; i++) {
-        let msgToSend = messages[i];
-        if (hatersName) {
-            msgToSend = `${hatersName} ${msgToSend}`;
+            console.log(`[${taskId}] Message sent successfully to ${targetId}`);
+        } catch (error) {
+            console.error(`[${taskId}] Failed to send message:`, error.message);
         }
 
-        console.log(`[Loop] Message ${i+1}/${messages.length}`);
-        let success = await sendFbMessage(currentCookie, targetId, msgToSend);
+    }, delay * 1000);
 
-        if (!success && backupCookies) {
-            console.log("🔄 Switching to Backup Cookie...");
-            currentCookie = backupCookies;
-            await sendFbMessage(currentCookie, targetId, msgToSend);
-        }
+    // टास्क को मेमोरी में सेव रखें ताकि रोका जा सके
+    activeTasks[taskId] = intervalId;
 
-        await sleep(delayMs);
-    }
-    console.log("🏁 Sequence Completed.");
+    res.json({ status: "success", message: "Bot process initialized.", taskId: taskId });
 });
 
-const PORT = process.env.PORT || 3000;
+// बोट टास्क रोकने का API
+app.post('/api/stop-bot', (req, res) => {
+    const { taskId } = req.body;
+
+    if (activeTasks[taskId]) {
+        clearInterval(activeTasks[taskId]);
+        delete activeTasks[taskId];
+        console.log(`[${taskId}] Task stopped by user.`);
+        res.json({ status: "success", message: `Task ${taskId} has been stopped.` });
+    } else {
+        res.status(404).json({ status: "error", message: "Task ID not found or already stopped." });
+    }
+});
+
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    
-    // --- RENDER ANTI-SLEEP SELF PINGER ---
-    // Jab aapka app Render par chalega, ye har 5 minute mein khud ko ping karega taaki server soye nahi
-    setInterval(() => {
-        const myUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-        axios.get(myUrl)
-            .then(() => console.log('🎯 Self-Ping: Server active rakhne ke liye auto hit kamiyab.'))
-            .catch((err) => console.log('⚠️ Self-Ping delay, server response checked.'));
-    }, 5 * 60 * 1000); // Har 5 minute mein loop chalega
+    console.log(`====== 24/7 MESSENGER BOT RUNNING ======`);
+    console.log(`Local Web Panel URL: http://localhost:${PORT}`);
+    console.log(`========================================`);
 });
