@@ -3,155 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>24/7 Messenger Bot - File Upload</title>
+    <title>24/7 Messenger Bot</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #fff0f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
-        h2 { text-align: center; color: #333; margin-top: 0; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 14px; color: #555; }
-        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        textarea { resize: vertical; }
-        .file-input-wrapper { background: #f9f9f9; border: 2px dashed #ccc; padding: 10px; border-radius: 6px; text-align: center; cursor: pointer; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; color: white; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 8px; transition: 0.2s; }
-        .btn:hover { opacity: 0.9; }
-        .btn-pink { background-color: #ff4081; }
-        .btn-blue { background-color: #2979ff; }
-        .btn-red { background-color: #ff1744; }
-        .row { display: flex; gap: 10px; }
-        .row .btn { width: 50%; }
-        .status-box { background: #1e1e1e; color: #00ff00; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; margin-top: 15px; max-height: 120px; overflow-y: auto; white-space: pre-wrap; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fff;
+            margin: 0;
+            padding: 10px;
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 15px;
+            border: 1px solid #f9dbe7;
+            border-radius: 8px;
+            background-color: #fff;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
+            background-color: #fff;
+        }
+        .file-upload {
+            border: 2px dashed #ccc;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            background-color: #fafafa;
+        }
+        .btn-submit {
+            width: 100%;
+            background-color: #ff2a74;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
+        .task-control-box {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .task-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-details {
+            flex: 1;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-stop {
+            flex: 1;
+            background-color: #ff1744;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⚡ 24/7 Messenger Bot ⚡</h2>
-    
+
+    <!-- Delay Field -->
     <div class="form-group">
-        <label>Delay (Seconds):</label>
-        <input type="number" id="delay" value="10" min="5">
-    </div>
-    
-    <div class="form-group">
-        <label>Target UID / Thread ID:</label>
-        <input type="text" id="targetId" placeholder="Enter FB Target ID">
+        <label for="delay">Delay (Seconds):</label>
+        <input type="number" id="delay" value="10">
     </div>
 
-    <!-- फाइल अपलोड का नया सेक्शन -->
+    <!-- Target UID / Thread ID -->
+    <div class="form-group">
+        <label for="target-id">Target UID / Thread ID:</label>
+        <input type="text" id="target-id" placeholder="Enter FB Target ID">
+    </div>
+
+    <!-- Upload Message File -->
     <div class="form-group">
         <label>Upload Message File (.txt):</label>
-        <div class="file-input-wrapper">
-            <input type="file" id="messageFile" accept=".txt" onchange="handleFileUpload()">
+        <div class="file-upload">
+            <input type="file" id="message-file" accept=".txt">
         </div>
     </div>
 
+    <!-- NEW FIELD: Haters Name Code (Messages Preview Box Automatically Removed) -->
     <div class="form-group">
-        <label>Messages Preview / Manual Typing:</label>
-        <textarea id="messages" rows="4" placeholder="मैसेज फ़ाइल लोड होने पर यहाँ दिखेंगे..."></textarea>
+        <label for="haters-name">Haters Name Code:</label>
+        <input type="text" id="haters-name" placeholder="Enter Haters Name Code here...">
     </div>
 
-    <button class="btn btn-pink" onclick="startBot()">🚀 Start Public Bot</button>
+    <!-- Start Button -->
+    <button class="btn-submit">🚀 Start Public Bot</button>
 
-    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+    <!-- Task Control Section -->
+    <div class="task-control-box">
+        <div class="task-title">🔍 Task Control</div>
+        
+        <div class="form-group">
+            <label for="task-id">Task ID:</label>
+            <input type="text" id="task-id" placeholder="Enter Task ID">
+        </div>
 
-    <h3>🔍 Task Control</h3>
-    <div class="form-group">
-        <label>Task ID:</label>
-        <input type="text" id="taskId" placeholder="Enter Task ID">
-    </div>
-    
-    <div class="row">
-        <button class="btn btn-blue" onclick="getTaskDetails()">Get Details</button>
-        <button class="btn btn-red" onclick="stopTask()">❌ Stop Task</button>
-    </div>
-
-    <div class="form-group" style="margin-top: 20px;">
-        <label>Primary Cookies:</label>
-        <textarea id="primaryCookies" rows="3" placeholder="Paste FB cookies here..."></textarea>
+        <div class="btn-group">
+            <button class="btn-details">Get Details</button>
+            <button class="btn-stop">❌ Stop Task</button>
+        </div>
     </div>
 
-    <button class="btn btn-blue" onclick="updateCookies()">💾 Update Cookies</button>
+    <!-- Primary Cookies -->
+    <div class="form-group" style="margin-top: 25px;">
+        <label for="cookies">Primary Cookies:</label>
+        <textarea id="cookies" placeholder="Paste FB cookies here..."></textarea>
+    </div>
 
-    <div class="status-box" id="logBox">System Status: Waiting for user action...</div>
 </div>
-
-<script>
-    const logBox = document.getElementById('logBox');
-    
-    function log(message) {
-        logBox.innerText += "\n> " + message;
-        logBox.scrollTop = logBox.scrollHeight;
-    }
-
-    // टेक्स्ट फाइल को रीड करके टेक्स्टएरिया में डालने का फंक्शन
-    function handleFileUpload() {
-        const fileInput = document.getElementById('messageFile');
-        const file = fileInput.files[0];
-        
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('messages').value = e.target.result;
-                log(`File loaded successfully: ${file.name}`);
-            };
-            reader.readAsText(file);
-        }
-    }
-
-    async function startBot() {
-        const delay = document.getElementById('delay').value;
-        const targetId = document.getElementById('targetId').value;
-        const messages = document.getElementById('messages').value.split('\n').filter(m => m.trim() !== "");
-        const cookies = document.getElementById('primaryCookies').value;
-
-        if(!cookies || !targetId || messages.length === 0) {
-            alert("कृपया Cookies, Target ID और Messages (या File) जरूर लोड करें!");
-            return;
-        }
-
-        log("Starting bot task...");
-        
-        const response = await fetch('/api/start-bot', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ delay, targetId, messages, cookies })
-        });
-        const data = await response.json();
-        
-        if(data.status === "success") {
-            log(`Bot Started! Task ID: ${data.taskId}`);
-            document.getElementById('taskId').value = data.taskId;
-        } else {
-            log(`Error: ${data.message}`);
-        }
-    }
-
-    async function stopTask() {
-        const taskId = document.getElementById('taskId').value;
-        if(!taskId) return alert("Task ID दर्ज करें!");
-
-        const response = await fetch('/api/stop-bot', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ taskId })
-        });
-        const data = await response.json();
-        log(data.message);
-    }
-
-    function updateCookies() {
-        const cookies = document.getElementById('primaryCookies').value;
-        if(!cookies) return alert("Cookies डालें!");
-        log("Cookies saved successfully.");
-    }
-
-    function getTaskDetails() {
-        const taskId = document.getElementById('taskId').value;
-        if(!taskId) return alert("Task ID दर्ज करें!");
-        log(`Checking status for Task: ${taskId}...`);
-    }
-</script>
 
 </body>
 </html>
