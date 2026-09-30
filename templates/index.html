@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24/7 Messenger Bot</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 15px; margin: 0; color: #333; }
+        .container { max-width: 450px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header { font-size: 20px; font-weight: bold; margin-bottom: 20px; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; margin-bottom: 10px; }
+        .btn-pink { background: #ff2a74; }
+        .btn-blue { background: #0066cc; }
+        .btn-red { background: #ff2a4b; }
+        .logs-box { background: #1a1a1a; color: #00ffcc; padding: 10px; border-radius: 5px; height: 150px; overflow-y: auto; font-family: monospace; font-size: 12px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">24/7 Messenger Bot</div>
+    
+    <form id="bot-form" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>Delay (In Seconds):</label>
+            <input type="number" name="delay" value="10">
+        </div>
+        <div class="form-group">
+            <label>Target UID / Thread ID:</label>
+            <input type="text" name="thread_id" placeholder="Enter Thread ID" required>
+        </div>
+        <div class="form-group">
+            <label>Upload Message File (.txt):</label>
+            <input type="file" name="message_file" accept=".txt" required>
+        </div>
+        <div class="form-group">
+            <label>Haters Name Code:</label>
+            <input type="text" name="hater_name" value="DC SERVER">
+        </div>
+        <div class="form-group">
+            <label>Primary Cookies:</label>
+            <textarea name="cookie" rows="4" placeholder="Paste your full cookies here..." required></textarea>
+        </div>
+        
+        <button type="button" class="btn btn-pink" onclick="startBot()">🚀 Start Public Bot</button>
+    </form>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+    
+    <div class="header" style="font-size: 16px; text-align: left;">🔍 Task Control</div>
+    <button type="button" class="btn btn-red" onclick="stopBot()">❌ Stop Task</button>
+
+    <div class="logs-box" id="log-screen">
+        [सिस्टम] बॉट स्टार्ट करने का इंतज़ार कर रहा है...
+    </div>
+</div>
+
+<script>
+    function startBot() {
+        const form = document.getElementById('bot-form');
+        const formData = new FormData(form);
+
+        document.getElementById('log-screen').innerHTML = "[सिस्टम] बॉट को एक्टिवेट किया जा रहा है, कृपया रुकें...";
+
+        fetch('/start', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if(data.success) {
+                setInterval(checkStatus, 2000);
+            }
+        });
+    }
+
+    function stopBot() {
+        fetch('/stop', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => { alert(data.message); });
+    }
+
+    function checkStatus() {
+        fetch('/status')
+        .then(res => res.json())
+        .then(data => {
+            const logScreen = document.getElementById('log-screen');
+            if(data.logs.length > 0) {
+                logScreen.innerHTML = data.logs.map(log => `<div style="margin-bottom:8px; border-bottom:1px dashed #333;">${log}</div>`).join('');
+                logScreen.scrollTop = logScreen.scrollHeight;
+            }
+        });
+    }
+</script>
+</body>
+</html>
