@@ -2,6 +2,7 @@ import os
 import time
 import threading
 import requests
+import re
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 
@@ -17,7 +18,11 @@ def run_messenger_bot(delay, thread_id, messages, hater_name, cookie):
     global server_status, logs_list
     server_status = "Active"
     
-    print(f"🤖 Bot Started for Thread: {thread_id}")
+    # थ्रेड आईडी से किसी भी प्रकार के अतिरिक्त टेक्स्ट या गलत स्पेस को हटाना
+    clean_thread_id = str(thread_id).strip()
+    clean_thread_id = re.sub(r'[^0-9]', '', clean_thread_id) # केवल नंबर्स रखना
+    
+    print(f"🤖 Bot Started for Thread ID: {clean_thread_id}")
     message_index = 0
     
     while not stop_event.is_set():
@@ -29,14 +34,14 @@ def run_messenger_bot(delay, thread_id, messages, hater_name, cookie):
         raw_message = messages[message_index]
         final_message = f"{hater_name} {raw_message}"
         
-        # बिल्कुल सही URL
-        url = "https://facebook.com" + str(thread_id)
+        # 🔗 बिल्कुल सही और फिक्स किया गया URL (बिना किसी जोड़-तोड़ की गलती के)
+        url = f"https://facebook.com{clean_thread_id}"
         
         headers = {
             "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-            "Cookie": cookie,
+            "Cookie": cookie.strip(),
             "Accept": "*/*",
-            "Referer": f"https://facebook.com{thread_id}",
+            "Referer": f"https://facebook.com{clean_thread_id}",
             "Origin": "https://facebook.com"
         }
         
@@ -46,13 +51,16 @@ def run_messenger_bot(delay, thread_id, messages, hater_name, cookie):
         }
         
         try:
+            # रिक्वेस्ट भेजने से पहले यूआरएल लॉग चेक करना
+            print(f"Sending request to URL: {url}")
             response = requests.post(url, headers=headers, data=payload, timeout=10)
+            
             if response.status_code == 200:
                 log_entry = f"\"{hater_name}\"<br>[{current_time}] ✅ Sent:<br>\"{final_message}\""
             else:
-                log_entry = f"\"{hater_name}\"<br>[{current_time}] ❌ Failed: (Facebook Response {response.status_code})"
+                log_entry = f"\"{hater_name}\"<br>[{current_time}] ❌ Failed: (Facebook HTTP Response {response.status_code})"
         except Exception as e:
-            log_entry = f"[{current_time}] ❌ Error: {str(e)}"
+            log_entry = f"[{current_time}] ❌ Connection Error: {str(e)}"
             
         logs_list.append(log_entry)
         if len(logs_list) > 15:
@@ -60,6 +68,7 @@ def run_messenger_bot(delay, thread_id, messages, hater_name, cookie):
             
         message_index = (message_index + 1) % len(messages)
         
+        # सुरक्षित डिले टाइमर
         for _ in range(int(delay)):
             if stop_event.is_set():
                 break
@@ -115,4 +124,3 @@ def get_status():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, threaded=True)
-    
