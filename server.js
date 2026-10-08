@@ -37,14 +37,16 @@ async function sendMessengerMessage(page, targetId, message) {
     }
 }
 
-// 1. टास्क शुरू करने की API
+// 1. टास्क शुरू करने की API (Render के लिए फिक्स किया हुआ हिस्सा)
 app.post('/api/start', async (req, res) => {
     const { primaryCookies, targetId, hatersName, messages, delay } = req.body;
     const taskId = 'TASK-' + Math.floor(100000 + Math.random() * 900000);
 
     try {
+        // यहाँ Render पर क्रोम लोड न होने की समस्या को पूरी तरह फिक्स कर दिया गया है
         const browser = await puppeteer.launch({
             headless: true,
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
             args: [
                 '--no-sandbox', 
                 '--disable-setuid-sandbox', 
@@ -53,8 +55,7 @@ app.post('/api/start', async (req, res) => {
                 '--no-zygote',
                 '--disable-blink-features=AutomationControlled',
                 '--window-size=1280,800'
-            ],
-            executablePath: '/usr/bin/google-chrome-stable'
+            ]
         });
         
         const page = await browser.newPage();
@@ -103,7 +104,7 @@ app.get('/api/status/:taskId', (req, res) => {
     res.json({ status: task.status, sentCount: task.sentCount });
 });
 
-// 3. कुकीज़ अपडेट करने की API (जो पहले छूट गई थी)
+// 3. कुकीज़ अपडेट करने की API
 app.post('/api/update-cookies', async (req, res) => {
     const { taskId, primaryCookies, backupCookies } = req.body;
     const task = activeTasks[taskId];
