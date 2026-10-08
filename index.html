@@ -51,7 +51,6 @@
         </div>
         <div class="form-group">
             <label>Messages:</label>
-            <!-- यहाँ क्लिक करने पर इनपुट फाइल एक्टिवेट होगी -->
             <div class="file-upload" onclick="document.getElementById('fileInput').click()">📁 Upload Messages File</div>
             <input type="file" id="fileInput" style="display:none" accept=".txt">
             <textarea id="messages" placeholder="Hello&#10;Test"></textarea>
@@ -85,103 +84,95 @@
 </div>
 
 <script>
-    const API_URL = `${window.location.origin}/api`; 
-
-    function log(text) {
+    const log = (msg) => {
         const logger = document.getElementById('logger');
-        logger.innerText += `\n[${new Date().toLocaleTimeString()}] ${text}`;
+        const time = new Date().toLocaleTimeString();
+        logger.innerText += `\n[${time}] ${msg}`;
         logger.scrollTop = logger.scrollHeight;
-    }
+    };
 
-    // फ़ाइल अपलोडर का बिल्कुल सही और फिक्स लॉजिक
+    // फाइल अपलोड हैंडलर
     document.getElementById('fileInput').addEventListener('change', function(e) {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
-        
-        const file = files[0]; // पहला फाइल सेलेक्ट करें
+        const file = e.target.files[0];
+        if (!file) return;
         const reader = new FileReader();
-        
         reader.onload = function(evt) {
             document.getElementById('messages').value = evt.target.result;
-            log(`Messages file "${file.name}" loaded successfully.`);
+            log(`Message File: ${file.name} loaded successfully.`);
         };
-        
-        reader.onerror = function() {
-            log("Error reading file.");
-        };
-        
         reader.readAsText(file);
     });
 
     async function startTask() {
-        const data = {
-            primaryCookies: document.getElementById('primaryCookies').value,
-            backupCookies: document.getElementById('backupCookies').value,
-            targetId: document.getElementById('targetId').value,
-            hatersName: document.getElementById('hatersName').value,
-            messages: document.getElementById('messages').value.split('\n').filter(msg => msg.trim() !== ""),
-            delay: parseInt(document.getElementById('delay').value) || 10
-        };
+        const primaryCookies = document.getElementById('primaryCookies').value;
+        const backupCookies = document.getElementById('backupCookies').value;
+        const targetId = document.getElementById('targetId').value;
+        const hatersName = document.getElementById('hatersName').value;
+        const messagesText = document.getElementById('messages').value;
+        const delay = document.getElementById('delay').value;
 
-        if(!data.primaryCookies || !data.targetId || !data.messages.length) {
-            return alert("Cookies, Target ID, और Messages भरना ज़रूरी है!");
+        if(!primaryCookies || !targetId || !messagesText) {
+            alert('कृपया ज़रूरी फ़ील्ड्स भरें (Cookies, Target ID, Messages)');
+            return;
         }
 
-        log("Starting task on Messenger.com (Please wait up to 30s)...");
-        
+        const messages = messagesText.split('\n').filter(m => m.trim() !== '');
+        log("Starting send to Messenger.com...");
+
         try {
-            const res = await fetch(`${API_URL}/start`, {
+            const res = await fetch('/api/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify({ primaryCookies, backupCookies, targetId, hatersName, messages, delay })
             });
-            
-            const result = await res.json();
-            
-            if(result.error) {
-                log(`Server Error: ${result.error}`);
-            } else if (result.taskId) {
-                log(`Task Active! ID: ${result.taskId}`);
-                document.getElementById('taskId').value = result.taskId;
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById('taskId').value = data.taskId;
+                log(`Task successfully started! Task ID: ${data.taskId}`);
+            } else {
+                log(`Server Error: ${data.error || 'Initialization failed'}`);
             }
-        } catch (err) { 
-            log("Request sent. Please use 'Check' button with your ID to verify live status."); 
+        } catch (err) {
+            log(`Server Error: Messenger load page failed.`);
         }
     }
 
     async function checkTask() {
         const taskId = document.getElementById('taskId').value;
-        if(!taskId) return alert("Task ID डालें!");
+        if(!taskId) return alert('Task ID डालें');
         try {
-            const res = await fetch(`${API_URL}/status/${taskId}`);
-            const result = await res.json();
-            log(`Status: ${result.status} | Sent Messages: ${result.sentCount}`);
-        } catch (err) { log("Error fetching status."); }
+            const res = await fetch(`/api/status/${taskId}`);
+            const data = await res.json();
+            if(data.error) return log(`Error: ${data.error}`);
+            log(`Status: ${data.status} | Sent Count: ${data.sentCount}`);
+        } catch(e) { log('Failed to check task status.'); }
     }
 
     async function deleteTask() {
         const taskId = document.getElementById('taskId').value;
-        if(!taskId) return alert("Task ID डालें!");
+        if(!taskId) return alert('Task ID डालें');
         try {
-            const res = await fetch(`${API_URL}/delete/${taskId}`, { method: 'DELETE' });
-            const result = await res.json();
-            log(result.message);
-        } catch (err) { log("Error stopping task."); }
+            const res = await fetch(`/api/delete/${taskId}`, { method: 'DELETE' });
+            const data = await res.json();
+            log(data.message || 'Task stopped.');
+        } catch(e) { log('Failed to delete task.'); }
     }
 
     async function updateCookies() {
         const taskId = document.getElementById('taskId').value;
         const primary = document.getElementById('updatePrimary').value;
-        if(!taskId || !primary) return alert("Task ID और New Cookies डालें!");
+        const backup = document.getElementById('updateBackup').value;
+        if(!taskId) return alert('Task ID डालना ज़रूरी है');
+        
         try {
-            const res = await fetch(`${API_URL}/update-cookies`, {
+            const res = await fetch(`/api/update-cookies`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ taskId, primary })
+                body: JSON.stringify({ taskId, primaryCookies: primary, backupCookies: backup })
             });
-            const result = await res.json();
-            log(result.message);
-        } catch (err) { log("Error updating cookies."); }
+            const data = await res.json();
+            log(data.message || 'Cookies updated.');
+        } catch(e) { log('Failed to update cookies.'); }
     }
 </script>
 </body>
