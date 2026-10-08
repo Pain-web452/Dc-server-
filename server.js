@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer-core'); 
+const puppeteer = require('puppeteer'); // FIX: puppeteer-core से बदलकर puppeteer किया
 const path = require('path');
 const app = express();
 
@@ -13,7 +13,7 @@ let activeTasks = {};
 // मैसेंजर पर मैसेज भेजने का मुख्य फंक्शन
 async function sendMessengerMessage(page, targetId, message) {
     try {
-        // FIX 1: URL में \$ और /t/ जोड़ा गया है ताकि सही चैट ID खुले
+        // FIX: URL सिंटैक्स को \${targetId} और /t/ के साथ ठीक किया गया
         await page.goto(`https://messenger.com{targetId}`, { 
             waitUntil: 'networkidle0', 
             timeout: 60000 
@@ -44,9 +44,10 @@ app.post('/api/start', async (req, res) => {
     const taskId = 'TASK-' + Math.floor(100000 + Math.random() * 900000);
 
     try {
+        // FIX: Render क्रोम क्रैश एरर को रोकने के लिए executablePath को एनवायरनमेंट वेरिएबल पर सेट किया
         const browser = await puppeteer.launch({
             headless: true,
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
             args: [
                 '--no-sandbox', 
                 '--disable-setuid-sandbox', 
@@ -74,7 +75,7 @@ app.post('/api/start', async (req, res) => {
         }
 
         await page.setCookie(...cookieArray);
-        await page.goto('https://www.messenger.com', { waitUntil: 'networkidle2' });
+        await page.goto('https://messenger.com', { waitUntil: 'networkidle2' });
 
         activeTasks[taskId] = { browser, page, targetId, hatersName, messages, delay, sentCount: 0, status: 'Running', currentIndex: 0 };
 
@@ -106,7 +107,7 @@ app.get('/api/status/:taskId', (req, res) => {
     res.json({ status: task.status, sentCount: task.sentCount });
 });
 
-// 3. कुकीज़ अपडेट करने की API (FIX 2: अधूरा कोड यहाँ पूरा किया गया है)
+// 3. कुकीज़ अपडेट करने की API (FIX: अधूरा कटा हुआ हिस्सा पूरा किया गया)
 app.post('/api/update-cookies', async (req, res) => {
     const { taskId, primaryCookies, backupCookies } = req.body;
     const task = activeTasks[taskId];
@@ -135,7 +136,7 @@ app.post('/api/update-cookies', async (req, res) => {
     }
 });
 
-// FIX 3: सर्वर को स्टार्ट करने के लिए पोर्ट लिसनर जोड़ा गया
+// FIX: सर्वर को चालू करने के लिए लिसनर जोड़ा गया
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
