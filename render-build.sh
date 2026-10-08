@@ -1,10 +1,16 @@
-#!/usr/bin/env bash
-# exit on error
-set -o errexit
-
-# Dependencies install करें
-npm install
-
-# Render के होम डायरेक्टरी में क्रोम इंस्टॉल करें (ताकि Absolute Path का एरर न आए)
-echo "...Downloading Chrome to Absolute Path..."
-PUPPETEER_CACHE_DIR=$HOME/.cache/puppeteer npx puppeteer browsers install chrome
+{
+  "name": "24-7-messenger-bot",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "puppeteer": "^22.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
