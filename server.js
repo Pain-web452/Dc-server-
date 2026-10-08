@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer'); // Render के लिए standard puppeteer का उपयोग
+const puppeteer = require('puppeteer'); 
 const path = require('path');
 const app = express();
 
@@ -13,7 +13,6 @@ let activeTasks = {};
 // मैसेंजर पर मैसेज भेजने का मुख्य फंक्शन
 async function sendMessengerMessage(page, targetId, message) {
     try {
-        // मैसेंजर चैट का सही URL फॉर्मेट
         await page.goto(`https://messenger.com{targetId}`, { 
             waitUntil: 'networkidle0', 
             timeout: 60000 
@@ -44,18 +43,16 @@ app.post('/api/start', async (req, res) => {
     const taskId = 'TASK-' + Math.floor(100000 + Math.random() * 900000);
 
     try {
-        // FIX: Render पर 'Initialization Failed' एरर रोकने के लिए सटीक लिनक्स एब्सोल्यूट पाथ सेट किया गया है
+        // FIX: Render पर बिना किसी एरर के क्रोम चलाने के लिए स्टेबल कॉन्फ़िगरेशन
         const browser = await puppeteer.launch({
             headless: true,
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/opt/render/.cache/puppeteer/chrome/linux-122.0.6261.69/chrome-linux/chrome',
             args: [
                 '--no-sandbox', 
                 '--disable-setuid-sandbox', 
                 '--disable-dev-shm-usage', 
                 '--single-process',
                 '--no-zygote',
-                '--disable-blink-features=AutomationControlled',
-                '--window-size=1280,800'
+                '--disable-blink-features=AutomationControlled'
             ]
         });
         
@@ -136,8 +133,8 @@ app.post('/api/update-cookies', async (req, res) => {
     }
 });
 
-// सर्वर पोर्ट लिसनर जोड़ा गया
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+        
