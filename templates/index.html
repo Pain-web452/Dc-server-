@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>24/7 Messenger Bot</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
         body { background-color: #FEE7EC; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         .container { background: #ffffff; width: 100%; max-width: 500px; border-radius: 8px; padding: 25px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); }
         .header { text-align: center; margin-bottom: 20px; }
         .header h1 { font-size: 20px; color: #333; font-weight: 700; }
-        .badge { background-color: #FF4A77; color: white; font-size: 10px; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-top: 5px; font-weight: bold; }
+        .badge { background-color: #FF4A77; color: white; font-size: 10px; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-size: 12px; font-weight: bold; color: #333; margin-bottom: 6px; }
         .form-group input[type="text"], .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #FCD4DC; background-color: #FFFDFE; border-radius: 6px; font-size: 13px; color: #666; outline: none; }
@@ -27,78 +27,64 @@
     </style>
 </head>
 <body>
-
 <div class="container">
     <div class="header">
         <h1>⚡ 24/7 Messenger Bot ⚡</h1>
         <div class="badge">Developer: Raj Mishra</div>
     </div>
-
     <form id="botForm">
         <div class="form-group">
             <label>Primary Cookies (Required):</label>
             <textarea id="primaryCookies" placeholder="c_user=...; xs=...;"></textarea>
         </div>
-
         <div class="form-group">
             <label>Backup Cookies (Optional):</label>
             <textarea id="backupCookies" placeholder="Agar primary fail ho jaye to ye use hogi.."></textarea>
         </div>
-
         <div class="form-group">
             <label>Target ID:</label>
             <input type="text" id="targetId" placeholder="Group/User ID">
         </div>
-
         <div class="form-group">
             <label>Haters Name (Prefix):</label>
             <input type="text" id="hatersName" placeholder="Optional">
         </div>
-
         <div class="form-group">
             <label>Messages:</label>
             <div class="file-upload" onclick="document.getElementById('fileInput').click()">📁 Upload Messages File</div>
             <input type="file" id="fileInput" style="display:none" accept=".txt">
             <textarea id="messages" placeholder="Hello&#10;Test"></textarea>
         </div>
-
         <div class="form-group">
             <label>Delay (Seconds):</label>
             <input type="text" id="delay" value="10">
         </div>
-
         <button type="button" class="btn btn-submit" onclick="startTask()">🚀 Start 24/7 Task</button>
     </form>
 
     <div class="section-title">🔍 Task Control</div>
-    
     <div class="form-group">
         <label>Task ID:</label>
         <input type="text" id="taskId" placeholder="Paste Task ID">
     </div>
-
     <div class="button-group">
         <button class="btn btn-check" onclick="checkTask()">🔹 Check</button>
         <button class="btn btn-delete" onclick="deleteTask()">🗑️ Delete</button>
     </div>
-
     <div class="form-group">
         <label>Update Primary Cookies:</label>
         <textarea id="updatePrimary" placeholder="Nayi primary cookies"></textarea>
     </div>
-
     <div class="form-group">
         <label>Update Backup Cookies:</label>
         <textarea id="updateBackup" placeholder="Nayi backup cookies"></textarea>
     </div>
-
     <button class="btn btn-update" onclick="updateCookies()">💾 Update Cookies</button>
-
     <div class="terminal" id="logger">Waiting...</div>
 </div>
 
 <script>
-    const API_URL = 'http://localhost:3000/api'; // अपने सर्वर का URL यहाँ डालें
+    const API_URL = `${window.location.origin}/api`; 
 
     function log(text) {
         const logger = document.getElementById('logger');
@@ -106,14 +92,13 @@
         logger.scrollTop = logger.scrollHeight;
     }
 
-    // फ़ाइल अपलोड हैंडलर
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
             document.getElementById('messages').value = e.target.result;
-            log("File loaded successfully.");
+            log("Messages file loaded.");
         };
         reader.readAsText(file);
     });
@@ -124,16 +109,15 @@
             backupCookies: document.getElementById('backupCookies').value,
             targetId: document.getElementById('targetId').value,
             hatersName: document.getElementById('hatersName').value,
-            messages: document.getElementById('messages').value.split('\n'),
+            messages: document.getElementById('messages').value.split('\n').filter(msg => msg.trim() !== ""),
             delay: parseInt(document.getElementById('delay').value) || 10
         };
 
         if(!data.primaryCookies || !data.targetId || !data.messages.length) {
-            alert("कृपया ज़रूरी फ़ील्ड्स भरें!");
-            return;
+            return alert("Cookies, Target ID, और Messages भरना ज़रूरी है!");
         }
 
-        log("Starting task...");
+        log("Starting task on Messenger.com...");
         try {
             const res = await fetch(`${API_URL}/start`, {
                 method: 'POST',
@@ -141,48 +125,43 @@
                 body: JSON.stringify(data)
             });
             const result = await res.json();
-            log(`Task Started! ID: ${result.taskId}`);
-            document.getElementById('taskId').value = result.taskId;
-        } catch (err) { log("Error starting task."); }
+            if(result.error) log(`Error: ${result.error}`);
+            else {
+                log(`Task Active! ID: ${result.taskId}`);
+                document.getElementById('taskId').value = result.taskId;
+            }
+        } catch (err) { log("Connection failed."); }
     }
 
     async function checkTask() {
         const taskId = document.getElementById('taskId').value;
         if(!taskId) return alert("Task ID डालें!");
-        
-        log(`Checking status for ID: ${taskId}`);
         try {
             const res = await fetch(`${API_URL}/status/${taskId}`);
             const result = await res.json();
-            log(`Status: ${result.status} | Messages Sent: ${result.sentCount}`);
-        } catch (err) { log("Error checking task."); }
+            log(`Status: ${result.status} | Sent: ${result.sentCount}`);
+        } catch (err) { log("Error fetching status."); }
     }
 
     async function deleteTask() {
         const taskId = document.getElementById('taskId').value;
         if(!taskId) return alert("Task ID डालें!");
-
-        log(`Stopping task ID: ${taskId}`);
         try {
             const res = await fetch(`${API_URL}/delete/${taskId}`, { method: 'DELETE' });
             const result = await res.json();
             log(result.message);
-        } catch (err) { log("Error deleting task."); }
+        } catch (err) { log("Error stopping task."); }
     }
 
     async function updateCookies() {
         const taskId = document.getElementById('taskId').value;
         const primary = document.getElementById('updatePrimary').value;
-        const backup = document.getElementById('updateBackup').value;
-
-        if(!taskId || (!primary && !backup)) return alert("Task ID और कम से कम एक नई कुकी डालें!");
-
-        log(`Updating cookies for ID: ${taskId}`);
+        if(!taskId || !primary) return alert("Task ID और New Cookies डालें!");
         try {
             const res = await fetch(`${API_URL}/update-cookies`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ taskId, primary, backup })
+                body: JSON.stringify({ taskId, primary })
             });
             const result = await res.json();
             log(result.message);
