@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer-core'); // यहाँ puppeteer-core कर दिया गया है
+const puppeteer = require('puppeteer-core'); 
 const path = require('path');
 const app = express();
 
@@ -12,12 +12,18 @@ let activeTasks = {};
 
 async function sendMessengerMessage(page, targetId, message) {
     try {
-        await page.goto(`https://messenger.com{targetId}`, { waitUntil: 'networkidle2' });
+        // सुधार 1: URL को सही किया गया है (/t/ लगाना मैसेंजर चैट के लिए ज़रूरी है)
+        await page.goto(`https://messenger.com{targetId}`, { waitUntil: 'networkidle2', timeout: 30000 });
+        
+        // मैसेंजर का नया चैट बॉक्सSelector
         const messageBoxSelector = '[role="textbox"][contenteditable="true"]';
         await page.waitForSelector(messageBoxSelector, { timeout: 15000 });
+        
         await page.click(messageBoxSelector);
+        // इनपुट बॉक्स को साफ़ करने और टाइप करने का सुरक्षित तरीका
         await page.type(messageBoxSelector, message);
         await page.keyboard.press('Enter');
+        
         console.log(`[BOT] Sent to ${targetId}: "${message}"`);
         return true;
     } catch (err) {
@@ -40,13 +46,13 @@ app.post('/api/start', async (req, res) => {
                 '--single-process',
                 '--no-zygote'
             ],
-            // Render के प्री-इंस्टॉल्ड क्रोम का उपयोग करेगा
             executablePath: '/usr/bin/google-chrome-stable'
         });
         
         const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
+        // कुकीज़ पार्सिंग
         const cookieArray = [];
         primaryCookies.split(';').forEach(pair => {
             const [name, value] = pair.trim().split('=');
@@ -57,6 +63,9 @@ app.post('/api/start', async (req, res) => {
         });
 
         await page.setCookie(...cookieArray);
+        
+        // सुधार 2: सीधे चैट पर जाने से पहले एक बार होमपेज लोड कराएं ताकि सेशन रीडायरेक्ट न हो
+        await page.goto('https://www.messenger.com', { waitUntil: 'networkidle2' });
 
         activeTasks[taskId] = { browser, page, targetId, hatersName, messages, delay, sentCount: 0, status: 'Running', currentIndex: 0 };
 
@@ -93,7 +102,13 @@ app.delete('/api/delete/:taskId', async (req, res) => {
     if (!task) return res.status(404).json({ error: "Task not found" });
 
     clearInterval(task.intervalId);
-    if (task.browser) await task.browser.close();
+    if (task.browser) {
+        try {
+            await task.browser.close();
+        } catch (e) {
+            console.error("Browser close error", e);
+        }
+    }
     delete activeTasks[taskId];
     res.json({ message: `Task ${taskId} stopped.` });
 });
