@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: messenger-bot
-    env: python
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.10.12
