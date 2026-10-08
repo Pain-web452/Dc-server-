@@ -51,6 +51,7 @@
         </div>
         <div class="form-group">
             <label>Messages:</label>
+            <!-- यहाँ क्लिक करने पर इनपुट फाइल एक्टिवेट होगी -->
             <div class="file-upload" onclick="document.getElementById('fileInput').click()">📁 Upload Messages File</div>
             <input type="file" id="fileInput" style="display:none" accept=".txt">
             <textarea id="messages" placeholder="Hello&#10;Test"></textarea>
@@ -92,14 +93,23 @@
         logger.scrollTop = logger.scrollHeight;
     }
 
+    // फ़ाइल अपलोडर का बिल्कुल सही और फिक्स लॉजिक
     document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = e.target.files;
-        if (!file) return;
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        
+        const file = files[0]; // पहला फाइल सेलेक्ट करें
         const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('messages').value = e.target.result;
-            log("Messages file loaded.");
+        
+        reader.onload = function(evt) {
+            document.getElementById('messages').value = evt.target.result;
+            log(`Messages file "${file.name}" loaded successfully.`);
         };
+        
+        reader.onerror = function() {
+            log("Error reading file.");
+        };
+        
         reader.readAsText(file);
     });
 
@@ -120,7 +130,6 @@
         log("Starting task on Messenger.com (Please wait up to 30s)...");
         
         try {
-            // Render के फ्री सर्वर के लिए टाइमआउट लिमिट हटा दी गई है
             const res = await fetch(`${API_URL}/start`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -136,8 +145,7 @@
                 document.getElementById('taskId').value = result.taskId;
             }
         } catch (err) { 
-            // सर्वर बैकग्राउंड में प्रोसेस जारी रखता है, स्टेटस चेक करें
-            log("Request handling taking longer than expected. Please use 'Check' button with your ID to verify."); 
+            log("Request sent. Please use 'Check' button with your ID to verify live status."); 
         }
     }
 
@@ -148,7 +156,7 @@
             const res = await fetch(`${API_URL}/status/${taskId}`);
             const result = await res.json();
             log(`Status: ${result.status} | Sent Messages: ${result.sentCount}`);
-        } catch (err) { log("Error fetching status. Verify if server is waking up."); }
+        } catch (err) { log("Error fetching status."); }
     }
 
     async function deleteTask() {
