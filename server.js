@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer'); // FIX: puppeteer-core से बदलकर puppeteer किया
+const puppeteer = require('puppeteer'); // Render के लिए standard puppeteer का उपयोग
 const path = require('path');
 const app = express();
 
@@ -13,7 +13,7 @@ let activeTasks = {};
 // मैसेंजर पर मैसेज भेजने का मुख्य फंक्शन
 async function sendMessengerMessage(page, targetId, message) {
     try {
-        // FIX: URL सिंटैक्स को \${targetId} और /t/ के साथ ठीक किया गया
+        // मैसेंजर चैट का सही URL फॉर्मेट
         await page.goto(`https://messenger.com{targetId}`, { 
             waitUntil: 'networkidle0', 
             timeout: 60000 
@@ -44,10 +44,10 @@ app.post('/api/start', async (req, res) => {
     const taskId = 'TASK-' + Math.floor(100000 + Math.random() * 900000);
 
     try {
-        // FIX: Render क्रोम क्रैश एरर को रोकने के लिए executablePath को एनवायरनमेंट वेरिएबल पर सेट किया
+        // FIX: Render पर 'Initialization Failed' एरर रोकने के लिए सटीक लिनक्स एब्सोल्यूट पाथ सेट किया गया है
         const browser = await puppeteer.launch({
             headless: true,
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/opt/render/.cache/puppeteer/chrome/linux-122.0.6261.69/chrome-linux/chrome',
             args: [
                 '--no-sandbox', 
                 '--disable-setuid-sandbox', 
@@ -107,7 +107,7 @@ app.get('/api/status/:taskId', (req, res) => {
     res.json({ status: task.status, sentCount: task.sentCount });
 });
 
-// 3. कुकीज़ अपडेट करने की API (FIX: अधूरा कटा हुआ हिस्सा पूरा किया गया)
+// 3. कुकीज़ अपडेट करने की API
 app.post('/api/update-cookies', async (req, res) => {
     const { taskId, primaryCookies, backupCookies } = req.body;
     const task = activeTasks[taskId];
@@ -136,7 +136,7 @@ app.post('/api/update-cookies', async (req, res) => {
     }
 });
 
-// FIX: सर्वर को चालू करने के लिए लिसनर जोड़ा गया
+// सर्वर पोर्ट लिसनर जोड़ा गया
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
