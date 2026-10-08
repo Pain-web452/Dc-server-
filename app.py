@@ -1,203 +1,134 @@
-import os
-import time
-import threading
-import re
-from datetime import datetime
+const express = require('express');
+const cors = require('cors');
+const puppeteer = require('puppeteer');
+const path = require('path');
+const app = express();
 
-from flask import Flask, render_template, request, jsonify
+app.use(cors());
+app.use(express.json());
 
-app = Flask(__name__, template_folder="templates")
+// फ्रंटएंड फाइलों को सर्व करने के लिए
+app.use(express.static(path.join(__dirname)));
 
-# Global variables
-server_status = "Deactivated"
-stop_event = threading.Event()
-bot_thread = None
-logs_list = []
+let activeTasks = {};
 
+// Messenger.com पर मैसेज भेजने वाला असली फंक्शन
+async function sendMessengerMessage(page, targetId, message) {
+    try {
+        // सीधे मैसेंजर चैट लिंक पर जाएं
+        await page.goto(`https://messenger.com{targetId}`, { waitUntil: 'networkidle2' });
 
-def run_messenger_bot(delay, thread_id, messages, hater_name):
-    global server_status, logs_list
+        // मैसेंजर का मैसेज बॉक्स (इनपुट फ़ील्ड) ढूँढें
+        const messageBoxSelector = '[role="textbox"][contenteditable="true"]';
+        await page.waitForSelector(messageBoxSelector, { timeout: 15000 });
 
-    server_status = "Active"
+        // इनपुट बॉक्स पर फोकस करें
+        await page.click(messageBoxSelector);
 
-    # Thread ID में सिर्फ numbers रखें
-    clean_thread_id = re.sub(r"[^0-9]", "", str(thread_id).strip())
+        // मैसेज टाइप करें
+        await page.type(messageBoxSelector, message);
 
-    if not clean_thread_id:
-        logs_list.append("[SYSTEM] ❌ Invalid Thread ID")
-        server_status = "Deactivated"
-        return
+        // Enter दबाकर मैसेज सेंड करें
+        await page.keyboard.press('Enter');
+        
+        console.log(`[MESSENGER BOT] Sent to ${targetId}: "${message}"`);
+        return true;
+    } catch (err) {
+        console.error(`[MESSENGER BOT ERROR] Failed sending to ${targetId}:`, err.message);
+        return false;
+    }
+}
 
-    # FIX: facebook.com और Thread ID के बीच "/" जरूरी है
-    url = f"https://facebook.com/{clean_thread_id}"
+app.post('/api/start', async (req, res) => {
+    const { primaryCookies, backupCookies, targetId, hatersName, messages, delay } = req.body;
+    const taskId = 'TASK-' + Math.floor(100000 + Math.random() * 900000);
 
-    print(f"🤖 Bot Started")
-    print(f"Thread ID: {clean_thread_id}")
-    print(f"URL: {url}")
+    try {
+        // Render के Linux Environment के लिए आवश्यक Arguments के साथ ब्राउज़र लॉन्च करें
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--single-process'
+            ],
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null
+        });
+        
+        const page = await browser.newPage();
 
-    message_index = 0
+        // यूजर-एजेंट सेट करें ताकि मैसेंजर इसे रियल ब्राउज़र माने
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
-    while not stop_event.is_set():
+        // कुकीज़ को पार्स करें (domain को .messenger.com और .facebook.com दोनों पर सेट किया गया है ताकि सेशन न टूटे)
+        const cookieArray = [];
+        primaryCookies.split(';').forEach(pair => {
+            const [name, value] = pair.trim().split('=');
+            if (name && value) {
+                // messenger.com के लिए कुकीज़ इंजेक्ट करें
+                cookieArray.push({
+                    name: name.trim(),
+                    value: value.trim(),
+                    domain: '.messenger.com',
+                    path: '/'
+                });
+                // बैकअप के लिए facebook.com डोमेन भी जोड़ें
+                cookieArray.push({
+                    name: name.trim(),
+                    value: value.trim(),
+                    domain: '.facebook.com',
+                    path: '/'
+                });
+            }
+        });
 
-        if not messages:
-            logs_list.append("[SYSTEM] ❌ कोई मैसेज नहीं मिला।")
-            break
+        await page.setCookie(...cookieArray);
 
-        current_time = datetime.now().strftime("%I:%M:%S %p")
+        activeTasks[taskId] = {
+            browser, page, targetId, hatersName, messages, delay,
+            sentCount: 0, status: 'Running', currentIndex: 0
+        };
 
-        raw_message = messages[message_index]
-        final_message = f"{hater_name} {raw_message}"
+        // टाइमर लूप शुरू करें
+        activeTasks[taskId].intervalId = setInterval(async () => {
+            let task = activeTasks[taskId];
+            if (!task || task.status !== 'Running') return;
 
-        # Safe preview/dry-run
-        log_entry = (
-            f'"{hater_name}"<br>'
-            f'[{current_time}] ✅ Prepared:<br>'
-            f'"{final_message}"<br>'
-            f'🔗 {url}'
-        )
+            let currentMsg = task.messages[task.currentIndex];
+            let prefix = task.hatersName ? `${task.hatersName} ` : '';
+            let fullMessage = `${prefix}${currentMsg}`;
 
-        logs_list.append(log_entry)
+            // Messenger.com वाला फंक्शन कॉल करें
+            const success = await sendMessengerMessage(task.page, task.targetId, fullMessage);
+            if (success) task.sentCount++;
 
-        if len(logs_list) > 15:
-            logs_list.pop(0)
+            task.currentIndex = (task.currentIndex + 1) % task.messages.length;
+        }, delay * 1000);
 
-        message_index = (message_index + 1) % len(messages)
+        res.json({ success: true, taskId });
+    } catch (error) {
+        console.error("Init Error:", error);
+        res.status(500).json({ error: "Messenger Bot initialization failed." });
+    }
+});
 
-        # Delay
-        try:
-            delay_seconds = max(1, int(delay))
-        except (ValueError, TypeError):
-            delay_seconds = 10
+app.get('/api/status/:taskId', (req, res) => {
+    const task = activeTasks[req.params.taskId];
+    if (!task) return res.status(404).json({ error: "Task not found" });
+    res.json({ status: task.status, sentCount: task.sentCount });
+});
 
-        for _ in range(delay_seconds):
-            if stop_event.is_set():
-                break
-            time.sleep(1)
+app.delete('/api/delete/:taskId', async (req, res) => {
+    const taskId = req.params.taskId;
+    const task = activeTasks[taskId];
+    if (!task) return res.status(404).json({ error: "Task not found" });
 
-    server_status = "Deactivated"
+    clearInterval(task.intervalId);
+    if (task.browser) await task.browser.close();
+    delete activeTasks[taskId];
+    res.json({ message: `Task ${taskId} stopped.` });
+});
 
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-
-@app.route("/start", methods=["POST"])
-def start_bot():
-    global bot_thread, stop_event
-
-    if server_status == "Active":
-        return jsonify({
-            "success": False,
-            "message": "बॉट पहले से ही चल रहा है!"
-        })
-
-    try:
-        delay = request.form.get("delay", "10")
-        thread_id = request.form.get("thread_id", "").strip()
-        hater_name = request.form.get("hater_name", "DC SERVER").strip()
-
-        msg_file = request.files.get("message_file")
-
-        if not msg_file:
-            return jsonify({
-                "success": False,
-                "message": "कृपया .txt फ़ाइल अपलोड करें!"
-            })
-
-        if not thread_id:
-            return jsonify({
-                "success": False,
-                "message": "Thread ID गायब है!"
-            })
-
-        # Thread ID validate करें
-        clean_thread_id = re.sub(r"[^0-9]", "", thread_id)
-
-        if not clean_thread_id:
-            return jsonify({
-                "success": False,
-                "message": "Invalid Thread ID!"
-            })
-
-        # Message file पढ़ें
-        file_content = msg_file.read().decode("utf-8")
-
-        messages = [
-            line.strip()
-            for line in file_content.splitlines()
-            if line.strip()
-        ]
-
-        if not messages:
-            return jsonify({
-                "success": False,
-                "message": "TXT file में कोई message नहीं मिला!"
-            })
-
-        # Previous stop event reset
-        stop_event.clear()
-
-        bot_thread = threading.Thread(
-            target=run_messenger_bot,
-            args=(
-                delay,
-                clean_thread_id,
-                messages,
-                hater_name
-            ),
-            daemon=True
-        )
-
-        bot_thread.start()
-
-        return jsonify({
-            "success": True,
-            "message": "बॉट सफलतापूर्वक स्टार्ट हो गया है!",
-            "thread_id": clean_thread_id,
-            "url": f"https://facebook.com/{clean_thread_id}"
-        })
-
-    except UnicodeDecodeError:
-        return jsonify({
-            "success": False,
-            "message": "TXT file UTF-8 format में होनी चाहिए!"
-        })
-
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": f"सर्वर एरर: {str(e)}"
-        })
-
-
-@app.route("/stop", methods=["POST"])
-def stop_bot():
-    global server_status
-
-    stop_event.set()
-    server_status = "Deactivated"
-
-    return jsonify({
-        "success": True,
-        "message": "बॉट को रोक दिया गया है।"
-    })
-
-
-@app.route("/status", methods=["GET"])
-def get_status():
-    return jsonify({
-        "status": server_status,
-        "logs": logs_list
-    })
-
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-
-    app.run(
-        host="0.0.0.0",
-        port=port,
-        threaded=True
-        )
-    
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Messenger Bot Server running on port ${PORT}`));
