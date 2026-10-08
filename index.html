@@ -93,7 +93,7 @@
     }
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
+        const file = e.target.files;
         if (!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -117,20 +117,28 @@
             return alert("Cookies, Target ID, और Messages भरना ज़रूरी है!");
         }
 
-        log("Starting task on Messenger.com...");
+        log("Starting task on Messenger.com (Please wait up to 30s)...");
+        
         try {
+            // Render के फ्री सर्वर के लिए टाइमआउट लिमिट हटा दी गई है
             const res = await fetch(`${API_URL}/start`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
+            
             const result = await res.json();
-            if(result.error) log(`Error: ${result.error}`);
-            else {
+            
+            if(result.error) {
+                log(`Server Error: ${result.error}`);
+            } else if (result.taskId) {
                 log(`Task Active! ID: ${result.taskId}`);
                 document.getElementById('taskId').value = result.taskId;
             }
-        } catch (err) { log("Connection failed."); }
+        } catch (err) { 
+            // सर्वर बैकग्राउंड में प्रोसेस जारी रखता है, स्टेटस चेक करें
+            log("Request handling taking longer than expected. Please use 'Check' button with your ID to verify."); 
+        }
     }
 
     async function checkTask() {
@@ -139,8 +147,8 @@
         try {
             const res = await fetch(`${API_URL}/status/${taskId}`);
             const result = await res.json();
-            log(`Status: ${result.status} | Sent: ${result.sentCount}`);
-        } catch (err) { log("Error fetching status."); }
+            log(`Status: ${result.status} | Sent Messages: ${result.sentCount}`);
+        } catch (err) { log("Error fetching status. Verify if server is waking up."); }
     }
 
     async function deleteTask() {
