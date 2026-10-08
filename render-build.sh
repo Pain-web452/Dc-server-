@@ -2,8 +2,9 @@
 # exit on error
 set -o errexit
 
-# 1. पहले सारे पैकेजेस इंस्टॉल करें
+# Dependencies install करें
 npm install
 
-# 2. Puppeteer के लिए सही तरीके से Chrome/Chromium ब्राउज़र डाउनलोड करें
-npx puppeteer browsers install chrome
+# Render के होम डायरेक्टरी में क्रोम इंस्टॉल करें (ताकि Absolute Path का एरर न आए)
+echo "...Downloading Chrome to Absolute Path..."
+PUPPETEER_CACHE_DIR=$HOME/.cache/puppeteer npx puppeteer browsers install chrome
