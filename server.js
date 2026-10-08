@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core'); // यहाँ puppeteer-core कर दिया गया है
 const path = require('path');
 const app = express();
 
@@ -31,7 +31,6 @@ app.post('/api/start', async (req, res) => {
     const taskId = 'TASK-' + Math.floor(100000 + Math.random() * 900000);
 
     try {
-        // Render के डिफ़ॉल्ट क्रोम पाथ को टारगेट करने के लिए सेटिंग्स
         const browser = await puppeteer.launch({
             headless: true,
             args: [
@@ -41,8 +40,8 @@ app.post('/api/start', async (req, res) => {
                 '--single-process',
                 '--no-zygote'
             ],
-            // यह Render के पहले से मौजूद क्रोमियम को ढूंढेगा
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable'
+            // Render के प्री-इंस्टॉल्ड क्रोम का उपयोग करेगा
+            executablePath: '/usr/bin/google-chrome-stable'
         });
         
         const page = await browser.newPage();
@@ -78,7 +77,7 @@ app.post('/api/start', async (req, res) => {
         res.json({ success: true, taskId });
     } catch (error) {
         console.error("Puppeteer Init Error:", error);
-        res.status(500).json({ error: "Messenger initialization failed. Chrome not found." });
+        res.status(500).json({ error: "Messenger initialization failed." });
     }
 });
 
