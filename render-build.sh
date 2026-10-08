@@ -7,7 +7,3 @@ npm install
 
 # 2. Puppeteer के लिए सही तरीके से Chrome/Chromium ब्राउज़र डाउनलोड करें
 npx puppeteer browsers install chrome
-#!/usr/bin/env bash
-set -o errexit
-npm install
-node node_modules/puppeteer/install.js
