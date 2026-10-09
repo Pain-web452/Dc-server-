@@ -104,7 +104,7 @@ app.get('/api/status/:taskId', (req, res) => {
     res.json({ status: task.status, sentCount: task.sentCount });
 });
 
-// 3. कुकीज़ अपडेट करने की API
+// 3. कुकीज़ अपडेट करने की API (केवल messenger.com कुकी के लिए अपडेटेड)
 app.post('/api/update-cookies', async (req, res) => {
     const { taskId, primaryCookies, backupCookies } = req.body;
     const task = activeTasks[taskId];
@@ -115,15 +115,52 @@ app.post('/api/update-cookies', async (req, res) => {
         const activeCookies = primaryCookies || backupCookies;
         if (activeCookies) {
             const cookieArray = [];
+            
+            // कुकीज़ को प्रोसेस करना
             activeCookies.split(';').forEach(pair => {
-                const [name, value] = pair.trim().split('=');
+                const parts = pair.trim().split('=');
+                const name = parts[0];
+                // अगर वैल्यू में '=' हो तो उसे सही से संभालने के लिए join का उपयोग करें
+                const value = parts.slice(1).join('='); 
+                
                 if (name && value) {
-                    cookieArray.push({ name: name.trim(), value: value.trim(), domain: '.messenger.com', path: '/', secure: true });
-                    cookieArray.push({ name: name.trim(), value: value.trim(), domain: '.facebook.com', path: '/', secure: true });
+                    const cleanName = name.trim();
+                    const cleanValue = value.trim();
+
+                    // 1. मैसेंजर डोमेन के लिए कुकी सेट करें
+                    cookieArray.push({ 
+                        name: cleanName, 
+                        value: cleanValue, 
+                        domain: '.messenger.com', 
+                        path: '/', 
+                        secure: true,
+                        sameSite: 'None' // बाहरी स्क्रिप्ट्स को ब्लॉक होने से रोकने के लिए
+                    });
+
+                    // 2. सुरक्षा बाईपास के लिए इसे मुख्य फेसबुक डोमेन पर भी मैप करें
+                    cookieArray.push({ 
+                        name: cleanName, 
+                        value: cleanValue, 
+                        domain: '.facebook.com', 
+                        path: '/', 
+                        secure: true,
+                        sameSite: 'None'
+                    });
                 }
             });
+
+            // ब्राउज़र में पुरानी कुकीज़ साफ़ करें ताकि कोई टकराव न हो
+            const client = await task.page.target().createCDPSession();
+            await client.send('Network.clearBrowserCookies');
+
+            // नई कस्टमाइज़्ड कुकीज़ सेट करें
             await task.page.setCookie(...cookieArray);
-            res.json({ success: true, message: "Cookies updated successfully" });
+
+            // कुकी सेट होने के बाद सीधे मैसेंजर के मुख्य इंटरफ़ेस को लोड करने का निर्देश दें
+            // यह इनिशियलाइज़ेशन एरर (Initialization Failed) को रोकेगा
+            await task.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+            res.json({ success: true, message: "Cookies updated successfully for Messenger" });
         } else {
             res.status(400).json({ error: "No cookies provided" });
         }
@@ -137,4 +174,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-        
+
