@@ -5,111 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>24/7 Messenger Bot</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffebee;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-        .container {
-            width: 100%;
-            max-width: 500px;
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #555;
-        }
-        input[type="text"], textarea, input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-        textarea {
-            resize: vertical;
-            height: 80px;
-        }
-        .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .btn-danger {
-            background-color: #ff1744;
-            color: white;
-        }
-        .btn-primary {
-            background-color: #2979ff;
-            color: white;
-        }
-        .btn-success {
-            background-color: #00e676;
-            color: white;
-        }
-        .btn-secondary {
-            background-color: #757575;
-            color: white;
-        }
-        .btn-row {
-            display: flex;
-            gap: 10px;
-        }
-        .btn-row .btn {
-            flex: 1;
-        }
-        .file-upload-btn {
-            background: #f5f5f5;
-            border: 1px dashed #bbb;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
-        .console {
-            background-color: #111;
-            color: #00ff00;
-            font-family: 'Courier New', Courier, monospace;
-            padding: 15px;
-            border-radius: 4px;
-            height: 150px;
-            overflow-y: auto;
-            margin-top: 15px;
-            font-size: 13px;
-            white-space: pre-wrap;
-        }
-        .section-title {
-            margin-top: 25px;
-            font-weight: bold;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
-            color: #444;
-        }
+        body { font-family: Arial, sans-serif; background-color: #ffebee; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 500px; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        textarea, input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        textarea { height: 80px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; color: white; }
+        .btn-danger { background-color: #ff1744; }
+        .btn-secondary { background-color: #ff5252; }
+        .console { background-color: #111; color: #00ff00; font-family: monospace; padding: 15px; border-radius: 4px; height: 150px; overflow-y: auto; margin-top: 15px; white-space: pre-wrap; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -117,32 +23,19 @@
 <div class="container">
     <h2>24/7 Messenger Bot</h2>
     
-    <!-- मुख्य सेटिंग्स -->
     <div class="form-group">
-        <label>Primary Cookies (Required):</label>
+        <label>Primary Cookies (messenger.com):</label>
         <textarea id="primaryCookies" placeholder="c_user=...; xs=...;"></textarea>
     </div>
 
     <div class="form-group">
-        <label>Backup Cookies (Optional):</label>
-        <textarea id="backupCookies" placeholder="Agar primary fail ho jaye to ye use hogi..."></textarea>
+        <label>Target ID (User/Group ID):</label>
+        <input type="text" id="targetId" placeholder="1000xxxxxxxxx">
     </div>
 
     <div class="form-group">
-        <label>Target ID:</label>
-        <input type="text" id="targetId" placeholder="Group/User ID">
-    </div>
-
-    <div class="form-group">
-        <label>Haters Name (Prefix):</label>
-        <input type="text" id="prefixName" placeholder="Optional">
-    </div>
-
-    <div class="form-group">
-        <label>Messages:</label>
-        <div class="file-upload-btn" onclick="document.getElementById('fileInput').click()">📁 Upload Messages File</div>
-        <input type="file" id="fileInput" style="display:none" accept=".txt" onchange="handleFileUpload(event)">
-        <textarea id="messagesText" placeholder="Hello&#10;Test"></textarea>
+        <label>Messages (One per line):</label>
+        <textarea id="messagesText" placeholder="Hello&#10;How are you?"></textarea>
     </div>
 
     <div class="form-group">
@@ -151,163 +44,68 @@
     </div>
 
     <button class="btn btn-danger" onclick="startTask()">🚀 Start 24/7 Task</button>
-
-    <!-- टास्क कंट्रोल सेक्शन -->
-    <div class="section-title">🔍 Task Control</div>
     
-    <div class="form-group" style="margin-top: 10px;">
-        <label>Task ID:</label>
-        <input type="text" id="controlTaskId" placeholder="Paste Task ID">
+    <div style="margin-top:20px; border-top: 1px solid #ccc; padding-top:10px;">
+        <label>Task ID to Stop:</label>
+        <input type="text" id="controlTaskId" placeholder="Task ID clear karne ke liye">
+        <button class="btn btn-secondary" onclick="stopTask()">🛑 Stop Task</button>
     </div>
 
-    <div class="btn-row">
-        <button class="btn btn-primary" onclick="checkTask()">Check</button>
-        <button class="btn btn-secondary" style="background-color: #ff5252;" onclick="deleteTask()">Delete</button>
-    </div>
-
-    <div class="form-group" style="margin-top: 15px;">
-        <label>Update Primary Cookies:</label>
-        <textarea id="updatePrimary" placeholder="Nayi primary cookies"></textarea>
-    </div>
-
-    <div class="form-group">
-        <label>Update Backup Cookies:</label>
-        <textarea id="updateBackup" placeholder="Nayi backup cookies"></textarea>
-    </div>
-
-    <button class="btn btn-primary" style="background-color: #2979ff;" onclick="updateCookiesOnly()">💾 Update Cookies</button>
-
-    <!-- लाइव कंसोल लॉग -->
-    <div class="console" id="logConsole">Waiting...</div>
+    <div class="console" id="logConsole">Waiting for action...</div>
 </div>
 
 <script>
-    // आपका रेंडर बैकएंड यूआरएल
     const BACKEND_URL = "https://onrender.com";
     let currentTaskId = "";
 
-    function log(message, color = "#00ff00") {
+    function log(msg, color = "#00ff00") {
         const consoleEl = document.getElementById('logConsole');
-        const time = new Date().toLocaleTimeString();
-        consoleEl.innerHTML += `<div style="color: ${color}">[${time}] ${message}</div>`;
+        consoleEl.innerHTML += `<div style="color: ${color}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
         consoleEl.scrollTop = consoleEl.scrollHeight;
     }
 
-    // फाइल अपलोड हैंडलर
-    function handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('messagesText').value = e.target.result;
-            log(`Message File: ${file.name} loaded successfully.`, "#00e676");
-        };
-        reader.readAsText(file);
-    }
-
-    // 1. टास्क शुरू करना
     async function startTask() {
-        // एक रैंडम टास्क आईडी जेनरेट करना
         currentTaskId = "task_" + Math.random().toString(36).substr(2, 9);
         document.getElementById('controlTaskId').value = currentTaskId;
         
-        log(`Starting send to Messenger.com...`);
-        
+        log("Sending credentials to Render API server...");
+
         try {
-            // स्टेप 1: बैकएंड पर ब्राउज़र स्टार्ट करना
-            const startRes = await fetch(`${BACKEND_URL}/api/start-task`, {
+            const res = await fetch(`${BACKEND_URL}/api/start-task`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ taskId: currentTaskId })
-            });
-            const startData = await startRes.json();
-            
-            if(!startData.success) {
-                log(`Server Error: Browser initialization failed.`, "#ff5252");
-                return;
-            }
-
-            // स्टेप 2: कुकीज़ सबमिट करना
-            const pCookies = document.getElementById('primaryCookies').value;
-            const bCookies = document.getElementById('backupCookies').value;
-
-            const cookieRes = await fetch(`${BACKEND_URL}/api/update-cookies`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    taskId: currentTaskId, 
-                    primaryCookies: pCookies, 
-                    backupCookies: bCookies 
+                body: JSON.stringify({
+                    taskId: currentTaskId,
+                    primaryCookies: document.getElementById('primaryCookies').value,
+                    targetId: document.getElementById('targetId').value,
+                    messages: document.getElementById('messagesText').value,
+                    delay: document.getElementById('delayInput').value
                 })
-            });
-            const cookieData = await cookieRes.json();
-
-            if(cookieData.success) {
-                log(`Success: Cookies loaded and Messenger initialized!`, "#00e676");
-                log(`Task running under ID: ${currentTaskId}`, "#2979ff");
-            } else {
-                log(`Server Error: ${cookieData.error || 'Messenger initialization failed.'}`, "#ff5252");
-            }
-
-        } catch (error) {
-            log(`Network Error: Cannot connect to server.`, "#ff5252");
-        }
-    }
-
-    // 2. कुकीज़ अपडेट करना (सिर्फ कुकी अपडेट बटन के लिए)
-    async function updateCookiesOnly() {
-        const taskId = document.getElementById('controlTaskId').value;
-        const pCookies = document.getElementById('updatePrimary').value;
-        const bCookies = document.getElementById('updateBackup').value;
-
-        if(!taskId) {
-            log("Error: Please enter a Task ID first.", "#ff5252");
-            return;
-        }
-
-        log("Updating cookies...");
-        try {
-            const res = await fetch(`${BACKEND_URL}/api/update-cookies`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ taskId, primaryCookies: pCookies, backupCookies: bCookies })
             });
             const data = await res.json();
             if(data.success) {
-                log("Cookies updated successfully!", "#00e676");
+                log(`Task successfully started! ID: ${currentTaskId}`, "#00e676");
+                log(`Bot running 24/7 in Render Background.`, "#00e676");
             } else {
-                log(`Server Error: ${data.error}`, "#ff5252");
+                log(`Error: ${data.error}`, "#ff5252");
             }
-        } catch (error) {
-            log("Error updating cookies.", "#ff5252");
+        } catch (e) {
+            log("Network Error: Render server is sleeping or updating.", "#ff5252");
         }
     }
 
-    // 3. टास्क चेक करना
-    async function checkTask() {
-        const taskId = document.getElementById('controlTaskId').value;
-        if(!taskId) return log("Enter Task ID", "#ff5252");
-        log(`Checking status for Task: ${taskId}...`, "#2979ff");
-        // नोट: यह डमी स्टेटस चेक है क्योंकि बैकएंड पर /status API डिफाइन नहीं है, आप सर्वर पर टास्क एक्टिविटी देख सकते हैं।
-        log(`Task ${taskId} connection is established on Render server.`, "#00e676");
+    async function stopTask() {
+        const id = document.getElementById('controlTaskId').value;
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/delete-task`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ taskId: id })
+            });
+            const data = await res.json();
+            log(data.message || data.error, "#ff5252");
+        } catch(e) { log("Error stopping task.", "#ff5252"); }
     }
-
-    // 4. टास्क डिलीट करना
-    async function deleteTask() {
-        const taskId = document.getElementById('controlTaskId').value;
-if(!taskId) return log("Enter Task ID", "#ff5252");
-try {
-const res = await fetch(${BACKEND_URL}/api/delete-task, {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ taskId })
-});
-const data = await res.json();
-if(data.success) {
-log(Task ${taskId} deleted and browser closed., "#ff5252");
-}
-} catch (error) {
-log("Error deleting task.", "#ff5252");
-}
-    }
-    
+</script>
+</body>
+</html>
