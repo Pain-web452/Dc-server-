@@ -1,166 +1,109 @@
 const express = require('express');
+const puppeteer = require('puppeteer');
 const cors = require('cors');
-const puppeteer = require('puppeteer'); 
-const path = require('path');
+
 const app = express();
-
-app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(cors());
 
-let activeTasks = {};
+// एक्टिव टास्क और ब्राउज़र सेशन्स को स्टोर करने के लिए ऑब्जेक्ट
+const activeTasks = {};
 
-// मैसेंजर पर मैसेज भेजने का मुख्य फंक्शन
-async function sendMessengerMessage(page, targetId, message) {
-    try {
-        await page.goto(`https://messenger.com{targetId}`, { 
-            waitUntil: 'networkidle0', 
-            timeout: 60000 
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        const messageBoxSelector = '[role="textbox"][contenteditable="true"]';
-        await page.waitForSelector(messageBoxSelector, { timeout: 20000 });
-        
-        await page.click(messageBoxSelector);
-        await page.type(messageBoxSelector, message, { delay: 100 }); 
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await page.keyboard.press('Enter');
-        
-        console.log(`[BOT] Sent to ${targetId}: "${message}"`);
-        return true;
-    } catch (err) {
-        console.error(`[BOT ERROR] ${targetId}:`, err.message);
-        return false;
+// 1. नया टास्क (बॉट ब्राउज़र) शुरू करने की API
+app.post('/api/start-task', async (req, res) => {
+    const { taskId } = req.body;
+    
+    if (activeTasks[taskId]) {
+        return res.json({ success: true, message: "Task already running" });
     }
-}
-
-// 1. टास्क शुरू करने की API
-app.post('/api/start', async (req, res) => {
-    const { primaryCookies, targetId, hatersName, messages, delay } = req.body;
-    const taskId = 'TASK-' + Math.floor(100000 + Math.random() * 900000);
 
     try {
-        // FIX: Render पर बिना किसी एरर के क्रोम चलाने के लिए स्टेबल कॉन्फ़िगरेशन
+        console.log(`[+] Starting browser for Task ID: ${taskId}`);
+        
+        // बिना ब्लॉक हुए बैकग्राउंड में ब्राउज़र चालू करना
         const browser = await puppeteer.launch({
             headless: true,
             args: [
-                '--no-sandbox', 
-                '--disable-setuid-sandbox', 
-                '--disable-dev-shm-usage', 
-                '--single-process',
-                '--no-zygote',
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
                 '--disable-blink-features=AutomationControlled'
             ]
         });
-        
+
         const page = await browser.newPage();
-        await page.setViewport({ width: 1280, height: 800 });
+        
+        // शुरुआती स्क्रीन साइज़ और यूजर एजेंट सेट करना
+        await page.setViewport({ width: 1920, height: 1080 });
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
 
-        const cookieArray = [];
-        if (primaryCookies) {
-            primaryCookies.split(';').forEach(pair => {
-                const [name, value] = pair.trim().split('=');
-                if (name && value) {
-                    cookieArray.push({ name: name.trim(), value: value.trim(), domain: '.messenger.com', path: '/', secure: true });
-                    cookieArray.push({ name: name.trim(), value: value.trim(), domain: '.facebook.com', path: '/', secure: true });
-                }
-            });
-        }
-
-        await page.setCookie(...cookieArray);
-        await page.goto('https://messenger.com', { waitUntil: 'networkidle2' });
-
-        activeTasks[taskId] = { browser, page, targetId, hatersName, messages, delay, sentCount: 0, status: 'Running', currentIndex: 0 };
-
-        activeTasks[taskId].intervalId = setInterval(async () => {
-            let task = activeTasks[taskId];
-            if (!task || task.status !== 'Running') return;
-
-            let currentMsg = task.messages[task.currentIndex];
-            let prefix = task.hatersName ? `${task.hatersName} ` : '';
-            let fullMessage = `${prefix}${currentMsg}`;
-
-            const success = await sendMessengerMessage(task.page, task.targetId, fullMessage);
-            if (success) task.sentCount++;
-
-            task.currentIndex = (task.currentIndex + 1) % task.messages.length;
-        }, delay * 1000);
-
-        res.json({ success: true, taskId });
+        // टास्क को मेमोरी में सेव करना
+        activeTasks[taskId] = { browser, page };
+        
+        res.json({ success: true, message: "Task initialized successfully" });
     } catch (error) {
-        console.error("Puppeteer Init Error:", error);
-        res.status(500).json({ error: "Messenger initialization failed." });
+        console.error("Start Task Error:", error);
+        res.status(500).json({ error: "Failed to start task" });
     }
 });
 
-// 2. टास्क स्टेटस चेक करने की API
-app.get('/api/status/:taskId', (req, res) => {
-    const task = activeTasks[req.params.taskId];
-    if (!task) return res.status(404).json({ error: "Task not found" });
-    res.json({ status: task.status, sentCount: task.sentCount });
-});
-
-// 3. कुकीज़ अपडेट करने की API (केवल messenger.com कुकी के लिए अपडेटेड)
+// 2. कुकीज़ अपडेट करने और मैसेंजर एक्टिव करने की API (Updated for messenger.com)
 app.post('/api/update-cookies', async (req, res) => {
     const { taskId, primaryCookies, backupCookies } = req.body;
     const task = activeTasks[taskId];
     
-    if (!task) return res.status(404).json({ error: "Task not found" });
+    if (!task) return res.status(404).json({ error: "Task not found. Please start the task first." });
 
     try {
         const activeCookies = primaryCookies || backupCookies;
         if (activeCookies) {
             const cookieArray = [];
             
-            // कुकीज़ को प्रोसेस करना
+            // कुकीज़ को बिना तोड़े सही तरीके से पार्स करना (xs टोकन फिक्स)
             activeCookies.split(';').forEach(pair => {
                 const parts = pair.trim().split('=');
                 const name = parts[0];
-                // अगर वैल्यू में '=' हो तो उसे सही से संभालने के लिए join का उपयोग करें
                 const value = parts.slice(1).join('='); 
                 
                 if (name && value) {
                     const cleanName = name.trim();
                     const cleanValue = value.trim();
 
-                    // 1. मैसेंजर डोमेन के लिए कुकी सेट करें
+                    // मैसेंजर डोमेन के लिए कुकीज़ इंजेक्ट करना
                     cookieArray.push({ 
-                        name: cleanName, 
-                        value: cleanValue, 
-                        domain: '.messenger.com', 
-                        path: '/', 
-                        secure: true,
-                        sameSite: 'None' // बाहरी स्क्रिप्ट्स को ब्लॉक होने से रोकने के लिए
+                        name: cleanName, value: cleanValue, 
+                        domain: '.messenger.com', path: '/', 
+                        secure: true, sameSite: 'None' 
                     });
-
-                    // 2. सुरक्षा बाईपास के लिए इसे मुख्य फेसबुक डोमेन पर भी मैप करें
+                    
+                    // सुरक्षा बायपास करने के लिए फेसबुक डोमेन पर भी मैप करना
                     cookieArray.push({ 
-                        name: cleanName, 
-                        value: cleanValue, 
-                        domain: '.facebook.com', 
-                        path: '/', 
-                        secure: true,
-                        sameSite: 'None'
+                        name: cleanName, value: cleanValue, 
+                        domain: '.facebook.com', path: '/', 
+                        secure: true, sameSite: 'None' 
                     });
                 }
             });
 
-            // ब्राउज़र में पुरानी कुकीज़ साफ़ करें ताकि कोई टकराव न हो
+            // ब्राउज़र का पुराना कैशे और कचरा कुकीज़ साफ़ करना
             const client = await task.page.target().createCDPSession();
             await client.send('Network.clearBrowserCookies');
+            await client.send('Network.clearBrowserCache');
 
-            // नई कस्टमाइज़्ड कुकीज़ सेट करें
+            // सुरक्षा बायपास के लिए 'wd' (विंडो डाइमेंशन) कुकी डालना जरूरी है
+            cookieArray.push({ name: 'wd', value: '1920x937', domain: '.messenger.com', path: '/' });
+            cookieArray.push({ name: 'wd', value: '1920x937', domain: '.facebook.com', path: '/' });
+
+            // ब्राउज़र में नई कुकीज़ सेट करना
             await task.page.setCookie(...cookieArray);
 
-            // कुकी सेट होने के बाद सीधे मैसेंजर के मुख्य इंटरफ़ेस को लोड करने का निर्देश दें
-            // यह इनिशियलाइज़ेशन एरर (Initialization Failed) को रोकेगा
-            await task.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+            // यूजर एजेंट को दोबारा री-चेक करना
+            await task.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
+            
+            // कुकीज़ लोड करने के बाद मैसेंजर को लाइव रीलोड करना (ताकि इनिशियलाइजेशन फेल न हो)
+            console.log(`[+] Initializing Messenger for Task ${taskId}...`);
+            await task.page.goto('https://messenger.com', { waitUntil: 'networkidle2', timeout: 60000 });
 
-            res.json({ success: true, message: "Cookies updated successfully for Messenger" });
+            res.json({ success: true, message: "Cookies updated and Messenger successfully initialized!" });
         } else {
             res.status(400).json({ error: "No cookies provided" });
         }
@@ -170,8 +113,28 @@ app.post('/api/update-cookies', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// 3. टास्क को डिलीट/स्टॉप करने की API
+app.post('/api/delete-task', async (req, res) => {
+    const { taskId } = req.body;
+    const task = activeTasks[taskId];
+
+    if (!task) return res.status(404).json({ error: "Task not found" });
+
+    try {
+        console.log(`[-] Closing browser for Task ID: ${taskId}`);
+        await task.browser.close();
+        delete activeTasks[taskId];
+        res.json({ success: true, message: "Task deleted successfully" });
+    } catch (error) {
+        console.error("Delete Task Error:", error);
+        res.status(500).json({ error: "Failed to delete task" });
+    }
 });
 
+// सर्वर पोर्ट सेटिंग्स
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`=============================================`);
+    console.log(`🚀 Messenger Bot Server running on port ${PORT}`);
+    console.log(`=============================================`);
+});
