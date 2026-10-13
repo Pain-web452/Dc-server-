@@ -61,7 +61,7 @@ app.get('/ping', (req, res) => res.send('Pong'));
 app.get('/', (req, res) => {
     res.send(`<!DOCTYPE html><html lang="hi"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>rishi❤️24/7 bot</title>
+<title>PETER❤️24/7 bot</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
@@ -202,7 +202,7 @@ button:active{transform:translateY(0)}
 }
 </style></head><body><div class="c">
 <h2>⚡ rishi❤️24/7 bot ⚡</h2>
-<span class="b">DEVELOPER: RISHI ❤️</span>
+<span class="b">DEVELOPER: PRTER ❤️</span>
 <form id="f">
 <label>Primary Cookies (Required):</label>
 <textarea name="cookies" placeholder="c_user=...; xs=...;" required></textarea>
@@ -220,7 +220,7 @@ button:active{transform:translateY(0)}
 <textarea name="messages" id="mb" placeholder="Hello&#10;Test" required></textarea>
 <label>Delay (Seconds):</label>
 <input type="number" name="delay" value="10" min="2" required>
-<button type="submit" class="bs">🚀 Ready kero rishi❤️ ka name leke</button>
+<button type="submit" class="bs">🚀 Ready PETER❤️ ka name leke</button>
 </form>
 <div class="tb">
 <h3>🔍 Task Control</h3>
